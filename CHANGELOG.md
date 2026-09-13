@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+Changed:
+No transport changes. Public API stays `EsnChannels` / `EsnChannel` (sendToServer, sendTo, fan-out). Lobby sessions stay in ESL; gameplay stays in the consuming mod.
+
 ## 1.0.0
 
 Added:
