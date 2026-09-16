@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2
+
+Fixed:
+CurseForge file relations no longer incorrectly list ESC and ESL as required. ESN only needs Minecraft and the loader.
+
 ## 1.0.1
 
 Changed:
