@@ -1,16 +1,15 @@
 package uk.co.extraspecialstudio.esn;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.fml.network.simple.SimpleChannel;
 
 import java.util.Collection;
 import java.util.Map;
@@ -21,7 +20,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * Forge 1.20.1 implementation of {@link EsnChannel} backed by {@link SimpleChannel}.
+ * Forge 1.16.5 implementation of {@link EsnChannel} backed by {@link SimpleChannel}.
  */
 final class ForgeEsnChannel implements EsnChannel {
     private final String ownerModId;
@@ -59,8 +58,8 @@ final class ForgeEsnChannel implements EsnChannel {
     public <T> void register(
         String path,
         Class<T> type,
-        BiConsumer<T, FriendlyByteBuf> encoder,
-        Function<FriendlyByteBuf, T> decoder,
+        BiConsumer<T, PacketBuffer> encoder,
+        Function<PacketBuffer, T> decoder,
         BiConsumer<T, Supplier<EsnClientContext>> clientHandler,
         BiConsumer<T, Supplier<EsnServerContext>> serverHandler
     ) {
@@ -80,7 +79,7 @@ final class ForgeEsnChannel implements EsnChannel {
                                 clientHandler.accept(msg, () -> new EsnClientContext(Minecraft.getInstance())));
                         }
                     } else {
-                        ServerPlayer sender = ctx.getSender();
+                        ServerPlayerEntity sender = ctx.getSender();
                         if (serverHandler != null && sender != null) {
                             serverHandler.accept(msg, () -> new EsnServerContext(sender));
                         }
@@ -99,15 +98,15 @@ final class ForgeEsnChannel implements EsnChannel {
     }
 
     @Override
-    public void sendTo(ServerPlayer player, Object packet) {
+    public void sendTo(ServerPlayerEntity player, Object packet) {
         ensureKnown(packet);
         channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     @Override
-    public void sendTo(Collection<ServerPlayer> players, Object packet) {
+    public void sendTo(Collection<ServerPlayerEntity> players, Object packet) {
         ensureKnown(packet);
-        for (ServerPlayer player : players) {
+        for (ServerPlayerEntity player : players) {
             if (player != null) {
                 channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
             }
@@ -120,7 +119,6 @@ final class ForgeEsnChannel implements EsnChannel {
                 "Packet type not registered on ESN channel " + ownerModId + ": "
                     + (packet == null ? "null" : packet.getClass().getName()));
         }
-        // Soft size guard: SimpleChannel encodes later; reject absurd object graphs early by class only.
         if (classToId.get(packet.getClass()) == null) {
             throw new IllegalStateException("Missing message id for " + packet.getClass());
         }

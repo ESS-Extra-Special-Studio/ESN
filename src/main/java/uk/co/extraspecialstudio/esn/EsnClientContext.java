@@ -1,8 +1,8 @@
 package uk.co.extraspecialstudio.esn;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.level.Level;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.world.World;
 
 import javax.annotation.Nullable;
 
@@ -19,12 +19,12 @@ public final class EsnClientContext {
     }
 
     @Nullable
-    public LocalPlayer player() {
+    public ClientPlayerEntity player() {
         return minecraft.player;
     }
 
     @Nullable
-    public Level level() {
+    public World level() {
         return minecraft.level;
     }
 }

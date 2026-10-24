@@ -1,7 +1,7 @@
 package uk.co.extraspecialstudio.esn;
 
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.PacketBuffer;
 
 import java.util.Collection;
 import java.util.function.BiConsumer;
@@ -30,15 +30,15 @@ public interface EsnChannel {
     <T> void register(
         String path,
         Class<T> type,
-        BiConsumer<T, FriendlyByteBuf> encoder,
-        Function<FriendlyByteBuf, T> decoder,
+        BiConsumer<T, PacketBuffer> encoder,
+        Function<PacketBuffer, T> decoder,
         BiConsumer<T, Supplier<EsnClientContext>> clientHandler,
         BiConsumer<T, Supplier<EsnServerContext>> serverHandler
     );
 
     void sendToServer(Object packet);
 
-    void sendTo(ServerPlayer player, Object packet);
+    void sendTo(ServerPlayerEntity player, Object packet);
 
-    void sendTo(Collection<ServerPlayer> players, Object packet);
+    void sendTo(Collection<ServerPlayerEntity> players, Object packet);
 }

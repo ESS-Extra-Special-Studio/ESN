@@ -1,23 +1,23 @@
 package uk.co.extraspecialstudio.esn;
 
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.server.ServerWorld;
 
 /** Server-side receive context for ESN packets. */
 public final class EsnServerContext {
-    private final ServerPlayer sender;
+    private final ServerPlayerEntity sender;
 
-    public EsnServerContext(ServerPlayer sender) {
+    public EsnServerContext(ServerPlayerEntity sender) {
         this.sender = sender;
     }
 
-    public ServerPlayer sender() {
+    public ServerPlayerEntity sender() {
         return sender;
     }
 
-    public ServerLevel level() {
-        return sender.serverLevel();
+    public ServerWorld level() {
+        return sender.getLevel();
     }
 
     public MinecraftServer server() {

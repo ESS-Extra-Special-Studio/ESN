@@ -1,6 +1,6 @@
 package uk.co.extraspecialstudio.esn;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.ResourceLocation;
 
 import java.util.Locale;
 import java.util.Map;
@@ -50,7 +50,7 @@ public final class EsnChannels {
     /** Channel SimpleChannel name under the {@code esn} namespace (lowercase-safe). */
     static ResourceLocation channelId(String ownerModId) {
         String path = ("ch_" + ownerModId).toLowerCase(Locale.ROOT).replace(' ', '_');
-        ResourceLocation id = ResourceLocation.tryBuild(EsnMod.MOD_ID, path);
+        ResourceLocation id = ResourceLocation.tryParse(EsnMod.MOD_ID + ":" + path);
         if (id == null) {
             throw new IllegalArgumentException("Invalid ESN channel id for ownerModId: " + ownerModId);
         }
@@ -60,7 +60,7 @@ public final class EsnChannels {
     static ResourceLocation packetId(String ownerModId, String path) {
         String ns = ownerModId.toLowerCase(Locale.ROOT);
         String p = path.toLowerCase(Locale.ROOT).replace(' ', '_');
-        ResourceLocation id = ResourceLocation.tryBuild(ns, p);
+        ResourceLocation id = ResourceLocation.tryParse(ns + ":" + p);
         if (id == null) {
             throw new IllegalArgumentException("Invalid ESN packet id: " + ns + ":" + p);
         }
