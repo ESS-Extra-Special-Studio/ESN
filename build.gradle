@@ -87,8 +87,6 @@ tasks.register('copyToNeoForgeTestPack') {
     }
 }
 
-tasks.named('build').configure { finalizedBy 'copyToNeoForgeTestPack' }
-
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }

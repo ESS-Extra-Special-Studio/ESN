@@ -61,6 +61,6 @@ public final class EsnChannels {
     static ResourceLocation packetId(String ownerModId, String path) {
         String ns = ownerModId.toLowerCase(java.util.Locale.ROOT);
         String p = path.toLowerCase(java.util.Locale.ROOT).replace(' ', '_');
-        return ResourceLocation.fromNamespaceAndPath(ns, p);
+        return new ResourceLocation(ns, p);
     }
 }
