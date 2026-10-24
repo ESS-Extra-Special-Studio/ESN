@@ -17,10 +17,10 @@ public final class EsnServerContext {
     }
 
     public ServerLevel level() {
-        return sender.serverLevel();
+        return sender.level();
     }
 
     public MinecraftServer server() {
-        return sender.getServer();
+        return sender.level().getServer();
     }
 }
