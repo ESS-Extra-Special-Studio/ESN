@@ -6,11 +6,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraftforge.network.Channel;
+import net.minecraftforge.network.ChannelBuilder;
 import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraftforge.network.SimpleChannel;
 
 import java.util.Collection;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.function.Supplier;
 final class ForgeEsnChannel implements EsnChannel {
     private final String ownerModId;
     private final String protocolVersion;
+    private final int protocolId;
     private final AtomicInteger nextId = new AtomicInteger(0);
     private final Map<Class<?>, Integer> classToId = new ConcurrentHashMap<>();
     private SimpleChannel channel;
@@ -33,16 +35,27 @@ final class ForgeEsnChannel implements EsnChannel {
     ForgeEsnChannel(String ownerModId, String protocolVersion) {
         this.ownerModId = ownerModId;
         this.protocolVersion = protocolVersion;
+        this.protocolId = protocolId(protocolVersion);
     }
 
     void init() {
         ResourceLocation name = EsnChannels.channelId(ownerModId);
-        this.channel = NetworkRegistry.newSimpleChannel(
-            name,
-            () -> protocolVersion,
-            protocolVersion::equals,
-            protocolVersion::equals
-        );
+        int accepted = protocolId;
+        this.channel = ChannelBuilder
+            .named(name)
+            .networkProtocolVersion(accepted)
+            .clientAcceptedVersions((Channel.VersionTest.Status status, int version) ->
+                status == Channel.VersionTest.Status.PRESENT && version == accepted)
+            .serverAcceptedVersions((Channel.VersionTest.Status status, int version) ->
+                status == Channel.VersionTest.Status.PRESENT && version == accepted)
+            .simpleChannel();
+    }
+
+    private static int protocolId(String protocolVersion) {
+        if (protocolVersion == null || protocolVersion.isEmpty()) {
+            return 0;
+        }
+        return protocolVersion.hashCode() & 0x7fffffff;
     }
 
     @Override
@@ -66,42 +79,36 @@ final class ForgeEsnChannel implements EsnChannel {
     ) {
         int id = nextId.getAndIncrement();
         classToId.put(type, id);
-        channel.registerMessage(
-            id,
-            type,
-            encoder::accept,
-            decoder::apply,
-            (msg, ctxSupplier) -> {
-                NetworkEvent.Context ctx = ctxSupplier.get();
-                ctx.enqueueWork(() -> {
-                    if (ctx.getDirection().getReceptionSide().isClient()) {
-                        if (clientHandler != null) {
-                            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
-                                clientHandler.accept(msg, () -> new EsnClientContext(Minecraft.getInstance())));
-                        }
-                    } else {
-                        ServerPlayer sender = ctx.getSender();
-                        if (serverHandler != null && sender != null) {
-                            serverHandler.accept(msg, () -> new EsnServerContext(sender));
-                        }
+        channel.messageBuilder(type, id)
+            .encoder(encoder::accept)
+            .decoder(decoder::apply)
+            .consumerMainThread((T msg, CustomPayloadEvent.Context ctx) -> {
+                if (ctx.getDirection().getReceptionSide().isClient()) {
+                    if (clientHandler != null) {
+                        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+                            clientHandler.accept(msg, () -> new EsnClientContext(Minecraft.getInstance())));
                     }
-                });
-                ctx.setPacketHandled(true);
-            }
-        );
+                } else {
+                    ServerPlayer sender = ctx.getSender();
+                    if (serverHandler != null && sender != null) {
+                        serverHandler.accept(msg, () -> new EsnServerContext(sender));
+                    }
+                }
+            })
+            .add();
         EsnMod.LOGGER.debug("[ESN] {}.{} registered as message id {}", ownerModId, path, id);
     }
 
     @Override
     public void sendToServer(Object packet) {
         ensureKnown(packet);
-        channel.sendToServer(packet);
+        channel.send(packet, PacketDistributor.SERVER.noArg());
     }
 
     @Override
     public void sendTo(ServerPlayer player, Object packet) {
         ensureKnown(packet);
-        channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        channel.send(packet, PacketDistributor.PLAYER.with(player));
     }
 
     @Override
@@ -109,7 +116,7 @@ final class ForgeEsnChannel implements EsnChannel {
         ensureKnown(packet);
         for (ServerPlayer player : players) {
             if (player != null) {
-                channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+                channel.send(packet, PacketDistributor.PLAYER.with(player));
             }
         }
     }
