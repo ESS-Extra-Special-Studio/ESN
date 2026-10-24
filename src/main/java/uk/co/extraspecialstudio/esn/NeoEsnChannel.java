@@ -23,7 +23,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * NeoForge 1.21.1 implementation of {@link EsnChannel} backed by {@link PayloadRegistrar}.
+ * NeoForge 1.21.4 implementation of {@link EsnChannel} backed by {@link PayloadRegistrar}.
+ * One handler serves both directions and branches on {@link PacketFlow}.
  */
 final class NeoEsnChannel implements EsnChannel {
     private final String ownerModId;
