@@ -1,6 +1,6 @@
 package uk.co.extraspecialstudio.esn;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 import java.util.Map;
@@ -58,9 +58,9 @@ public final class EsnChannels {
         }
     }
 
-    static ResourceLocation packetId(String ownerModId, String path) {
+    static Identifier packetId(String ownerModId, String path) {
         String ns = ownerModId.toLowerCase(java.util.Locale.ROOT);
         String p = path.toLowerCase(java.util.Locale.ROOT).replace(' ', '_');
-        return ResourceLocation.fromNamespaceAndPath(ns, p);
+        return Identifier.fromNamespaceAndPath(ns, p);
     }
 }
