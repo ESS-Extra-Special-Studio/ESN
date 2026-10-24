@@ -17,7 +17,7 @@ public final class EsnServerContext {
     }
 
     public ServerLevel level() {
-        return sender.serverLevel();
+        return sender.getLevel();
     }
 
     public MinecraftServer server() {
