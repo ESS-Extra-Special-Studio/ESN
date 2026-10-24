@@ -4,10 +4,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -23,7 +23,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * NeoForge 1.21.1 implementation of {@link EsnChannel} backed by {@link PayloadRegistrar}.
+ * NeoForge 1.21.10 implementation of {@link EsnChannel} backed by {@link PayloadRegistrar}.
+ * Bidirectional packets register a server handler and a client handler separately.
+ * Serverbound sends use {@link ClientPacketDistributor}.
  */
 final class NeoEsnChannel implements EsnChannel {
     private final String ownerModId;
@@ -90,7 +92,7 @@ final class NeoEsnChannel implements EsnChannel {
 
     @Override
     public void sendToServer(Object packet) {
-        PacketDistributor.sendToServer(envelope(packet));
+        ClientPacketDistributor.sendToServer(envelope(packet));
     }
 
     @Override
@@ -130,11 +132,11 @@ final class NeoEsnChannel implements EsnChannel {
                 buf -> binding.toEnvelope(binding.decoder.apply(buf))
             );
             if (binding.clientHandler != null && binding.serverHandler != null) {
-                registrar.playBidirectional(binding.payloadType, codec, binding::handle);
+                registrar.playBidirectional(binding.payloadType, codec, binding::handleServer, binding::handleClient);
             } else if (binding.serverHandler != null) {
-                registrar.playToServer(binding.payloadType, codec, binding::handle);
+                registrar.playToServer(binding.payloadType, codec, binding::handleServer);
             } else {
-                registrar.playToClient(binding.payloadType, codec, binding::handle);
+                registrar.playToClient(binding.payloadType, codec, binding::handleClient);
             }
         }
     }
@@ -156,17 +158,20 @@ final class NeoEsnChannel implements EsnChannel {
             return (T) packet;
         }
 
-        void handle(EsnEnvelope envelope, IPayloadContext ctx) {
+        void handleServer(EsnEnvelope envelope, IPayloadContext ctx) {
             T packet = cast(envelope.packet());
             ctx.enqueueWork(() -> {
-                if (ctx.flow() == PacketFlow.CLIENTBOUND) {
-                    if (clientHandler != null) {
-                        clientHandler.accept(packet, () -> new EsnClientContext(Minecraft.getInstance()));
-                    }
-                } else {
-                    if (serverHandler != null && ctx.player() instanceof ServerPlayer sender) {
-                        serverHandler.accept(packet, () -> new EsnServerContext(sender));
-                    }
+                if (serverHandler != null && ctx.player() instanceof ServerPlayer sender) {
+                    serverHandler.accept(packet, () -> new EsnServerContext(sender));
+                }
+            });
+        }
+
+        void handleClient(EsnEnvelope envelope, IPayloadContext ctx) {
+            T packet = cast(envelope.packet());
+            ctx.enqueueWork(() -> {
+                if (clientHandler != null) {
+                    clientHandler.accept(packet, () -> new EsnClientContext(Minecraft.getInstance()));
                 }
             });
         }
