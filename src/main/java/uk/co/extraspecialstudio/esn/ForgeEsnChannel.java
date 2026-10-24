@@ -21,7 +21,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * Forge 1.20.1 implementation of {@link EsnChannel} backed by {@link SimpleChannel}.
+ * Forge 1.18.2 implementation of {@link EsnChannel} backed by {@link SimpleChannel}.
  */
 final class ForgeEsnChannel implements EsnChannel {
     private final String ownerModId;

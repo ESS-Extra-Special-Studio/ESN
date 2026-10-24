@@ -50,20 +50,20 @@ public final class EsnChannels {
     /** Channel SimpleChannel name under the {@code esn} namespace (lowercase-safe). */
     static ResourceLocation channelId(String ownerModId) {
         String path = ("ch_" + ownerModId).toLowerCase(Locale.ROOT).replace(' ', '_');
-        ResourceLocation id = ResourceLocation.tryBuild(EsnMod.MOD_ID, path);
-        if (id == null) {
-            throw new IllegalArgumentException("Invalid ESN channel id for ownerModId: " + ownerModId);
-        }
-        return id;
+        return location(EsnMod.MOD_ID, path, "channel id for ownerModId: " + ownerModId);
     }
 
     static ResourceLocation packetId(String ownerModId, String path) {
         String ns = ownerModId.toLowerCase(Locale.ROOT);
         String p = path.toLowerCase(Locale.ROOT).replace(' ', '_');
-        ResourceLocation id = ResourceLocation.tryBuild(ns, p);
-        if (id == null) {
-            throw new IllegalArgumentException("Invalid ESN packet id: " + ns + ":" + p);
+        return location(ns, p, "packet id: " + ns + ":" + p);
+    }
+
+    private static ResourceLocation location(String namespace, String path, String what) {
+        try {
+            return new ResourceLocation(namespace, path);
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Invalid ESN " + what, ex);
         }
-        return id;
     }
 }
